@@ -6,8 +6,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 // ----------------------------------------------------
 
 export default function AItest({
-  defaultModel = 'gemini-2.5-flash',
-  starter = '幫我列出一個日本淺草以及東京迪士尼的兩天一夜行程',
+  defaultModel = 'gemini-2.5-flash', // 預設模型
+  starter = '請問 Jamie Paint 的客製化寵物繪圖費用和流程？',
 }) {
   // 移除了 <string> 和 <ChatMsg[]> 泛型類型
   const [model, setModel] = useState(defaultModel);
@@ -22,19 +22,23 @@ export default function AItest({
 
   // Load key from localStorage (for demo only — never ship an exposed key in production)
   useEffect(() => {
-    const saved = localStorage.getItem('gemini_api_key'); 
+    const saved = localStorage.getItem('gemini_api_key');
     if (saved) setApiKey(saved);
   }, []);
 
-  // Warm welcome + starter
+  // Warm welcome + starter (Jamie Paint 諮詢主題)
   useEffect(() => {
-    setHistory([{ role: 'model', parts: [{ text: '你好👋 我是 Gemini 小幫手，有什麼想聊的？' }] }]);
+    setHistory([
+      { role: 'model', parts: [{ text: '你好👋 我是 **Jamie Paint 寵物繪圖** 服務諮詢小幫手，很高興為您服務！請問有什麼關於客製化服務的問題嗎？' }] },
+    ]);
     if (starter) setInput(starter);
   }, [starter]);
 
   // auto-scroll to bottom
   useEffect(() => {
-    const el = listRef.current; if (!el) return; el.scrollTop = el.scrollHeight;
+    const el = listRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
   }, [history, loading]);
 
   const ai = useMemo(() => {
@@ -61,9 +65,22 @@ export default function AItest({
 
     try {
       // Use the official SDK directly in the browser
+      // 將 Jamie Paint 的背景資訊作為 system instruction 傳遞給模型，以獲得更相關的回答
+      const systemInstruction = `你是一個專業的客服機器人，專門提供 Jamie Paint 客製化寵物繪圖服務的資訊。
+        主要服務資訊如下：
+        - 產品：寵物似顏繪 (單色/色塊背景)。
+        - 費用：NT$500/隻。
+        - 流程：請前往蝦皮頁面或私訊 Instagram 諮詢 -> 確認報價匯款 -> 繪圖 (一般 7-10 工作天) -> 校稿 (1-2 次免費修改) -> 提供圖稿。
+        - 聯絡：蝦皮賣場網址：https://shopee.tw/jiunjiun0625 或 Instagram 私訊 (jamie_paint)。
+        - 急件：可加價，需先確認檔期。
+        請根據這些資訊和使用者的對話歷史來回答問題。如果使用者詢問與繪圖無關的問題，請禮貌地引導他們回到繪圖服務上。`;
+
       const resp = await ai.models.generateContent({
         model,
         contents: newHistory, // send the chat history to keep context
+        config: {
+          systemInstruction: systemInstruction,
+        }
       });
 
       const reply = resp.text || '[No content]';
@@ -91,7 +108,7 @@ export default function AItest({
       <div style={styles.card}>
 
         {/* Header */}
-        <div style={styles.header}>Gemini Chat 聊天小幫手 🤖</div>
+        <div style={styles.header}>Jamie Paint 寵物繪圖諮詢小幫手 🎨🐶</div>
 
         {/* Controls (Model and API Key) */}
         <div style={styles.controls}>
@@ -103,10 +120,12 @@ export default function AItest({
                 onChange={e => setModel(e.target.value)}
                 placeholder="例如 gemini-2.5-flash"
                 style={styles.input}
+                // 顯示目前使用的模型
+                disabled={loading} 
               />
             </label>
             <div style={styles.controlInfo}>
-               模型名稱可能隨時更新，請使用有效的 ID。
+              目前使用模型為: **{model}**
             </div>
           </div>
           <div style={styles.controlGroup}>
@@ -133,6 +152,27 @@ export default function AItest({
             </label>
           </div>
         </div>
+        
+        {/* 外部連結按鈕區塊 (已將 LINE 替換為 蝦皮) */}
+        <div style={styles.externalLinks}>
+          <a
+            href="https://www.instagram.com/jamie_paint/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ ...styles.linkBtn, background: '#e1306c' }}
+          >
+            📸 前往 Instagram (作品集)
+          </a>
+          <a
+            href="https://shopee.tw/jiunjiun0625"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ ...styles.linkBtn, background: '#f53d2d' }} // 蝦皮標準色
+          >
+            🛒 前往蝦皮賣場
+          </a>
+        </div>
+
 
         {/* Messages */}
         <div ref={listRef} style={styles.messages}>
@@ -145,7 +185,6 @@ export default function AItest({
               }}
             >
               <div style={m.role === 'user' ? styles.userMsg : styles.assistantMsg}>
-                {/* 移除了角色標籤，僅靠樣式區分 */}
                 <div style={styles.msgBody}>{renderMarkdownLike(m.parts.map(p => p.text).join('\n'))}</div>
               </div>
             </div>
@@ -170,7 +209,7 @@ export default function AItest({
           style={styles.composer}
         >
           <input
-            placeholder="輸入訊息，按 Enter 送出"
+            placeholder="輸入您的問題，例如：請問繪圖費用是多少？"
             value={input}
             onChange={e => setInput(e.target.value)}
             style={styles.textInput}
@@ -180,9 +219,9 @@ export default function AItest({
           </button>
         </form>
 
-        {/* Quick examples */}
+        {/* Quick examples (FAQ) */}
         <div style={styles.suggestionList}>
-          {['日本淺草附近有哪些推薦的住宿？', '日本淺草必吃美食', '日本東京迪士尼必玩項目'].map((q) => (
+          {['請問繪圖費用是多少？', '客製化流程如何進行？', '急件製作需要多久？', '對照片有什麼要求嗎？'].map((q) => (
             <button key={q} type="button" style={styles.suggestion} onClick={() => sendMessage(q)}>{q}</button>
           ))}
         </div>
@@ -213,7 +252,7 @@ const styles = {
   header: {
     padding: '12px 20px',
     fontWeight: 600,
-    fontSize: 16,
+    fontSize: 18,
     color: '#333',
     background: '#f9fafb',
     textAlign: 'center',
@@ -236,6 +275,26 @@ const styles = {
   controlInfo: { fontSize: 11, opacity: 0.6, marginTop: 4 },
   input: { padding: '8px 12px', borderRadius: 8, border: '1px solid #ddd', fontSize: 13, width: '100%' },
   keyRememberLabel: { display:'flex', alignItems:'center', gap:6, marginTop:4, fontSize:11, opacity: 0.7 },
+  
+  // 外部連結按鈕區塊樣式
+  externalLinks: {
+    display: 'flex',
+    gap: 8,
+    padding: 12,
+    background: '#fff',
+    borderBottom: '1px solid #eee',
+    justifyContent: 'center',
+  },
+  linkBtn: {
+    padding: '8px 15px',
+    borderRadius: 8,
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: 600,
+    textDecoration: 'none',
+    cursor: 'pointer',
+    transition: 'opacity 0.2s',
+  },
   
   messages: {
     padding: 16,
