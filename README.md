@@ -11,3 +11,5 @@
 2.把Gemini Chat 改成Jamie Paint 寵物繪圖諮詢小幫手   
 (Jamie Paint寵物繪圖是我目前在合作的商業賣家)     
 3.諮詢小幫手的介面，除了能回答問題，也能直接連結到IG網頁以及蝦皮賣場   
+
+作業四 https://new-repo-mwbp.onrender.com
