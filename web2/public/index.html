@@ -73,6 +73,27 @@
             margin-bottom: 5px;
             font-size: 0.9rem;
         }
+        /* *** GitHub 專用樣式 (整合新增) *** */
+        .github-container {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 30px;
+            background-color: #f8f9fa;
+        }
+        .github-container h4 {
+            color: #212529; /* 黑色 */
+            font-weight: 600;
+        }
+        .github-repo-item {
+            border-left: 5px solid #007bff; /* 藍色邊框 */
+            padding-left: 15px;
+            margin-top: 15px;
+        }
+        .github-repo-item p {
+            font-size: 0.95rem;
+            color: #6c757d;
+        }
     </style>
 </head>
 
@@ -381,6 +402,14 @@
     </div>
     <div class="container-xxl py-6 pt-5" id="project">
         <div class="container">
+            <div class="github-container wow fadeInUp" data-wow-delay="0.1s">
+                <h2 class="display-6 mb-3 text-primary"><i class="fab fa-github me-2"></i>最新 GitHub 專案</h2>
+                <div id="github-repo-display">
+                    <div class="text-center">
+                        <i class="fa fa-spinner fa-spin"></i> 正在載入您的最新程式碼專案...
+                    </div>
+                </div>
+            </div>
             <div class="row g-5 mb-5 align-items-center wow fadeInUp" data-wow-delay="0.1s">
                 <div class="col-lg-6">
                     <h1 class="display-5 mb-0">活動參與和作品</h1>
@@ -542,46 +571,25 @@
     <script src="js/main.js"></script>
 
     <script>
+    // ------------------------------------------------------------------
+    // 1. 天氣查詢功能
+    // ------------------------------------------------------------------
     async function getWeatherPortable() {
-        // 使用獨立的 ID 以避免與原網頁衝突
         let cityInput = document.getElementById("cityInputPortable").value.trim();
         let resultElement = document.getElementById("weatherResultPortable");
         
-        // 中文轉英文拼音對照表 (從原程式碼中移植)
         const cityMap = {
-            "台北": "Taipei",
-            "台北市": "Taipei",
-            "新北": "New Taipei",
-            "新北市": "New Taipei",
-            "台中": "Taichung",
-            "台中市": "Taichung",
-            "台南": "Tainan",
-            "台南市": "Tainan",
-            "高雄": "Kaohsiung",
-            "高雄市": "Kaohsiung",
-            "基隆": "Keelung",
-            "基隆市": "Keelung",
-            "桃園": "Taoyuan",
-            "桃園市": "Taoyuan",
-            "新竹": "Hsinchu",
-            "新竹市": "Hsinchu",
-            "苗栗": "Miaoli",
-            "彰化": "Changhua",
-            "南投": "Nantou",
-            "雲林": "Yunlin",
-            "嘉義": "Chiayi",
-            "嘉義市": "Chiayi",
-            "屏東": "Pingtung",
-            "宜蘭": "Yilan",
-            "花蓮": "Hualien",
-            "台東": "Taitung",
-            "澎湖": "Penghu",
-            "金門": "Kinmen",
+            "台北": "Taipei", "台北市": "Taipei", "新北": "New Taipei", "新北市": "New Taipei",
+            "台中": "Taichung", "台中市": "Taichung", "台南": "Tainan", "台南市": "Tainan",
+            "高雄": "Kaohsiung", "高雄市": "Kaohsiung", "基隆": "Keelung", "基隆市": "Keelung",
+            "桃園": "Taoyuan", "桃園市": "Taoyuan", "新竹": "Hsinchu", "新竹市": "Hsinchu",
+            "苗栗": "Miaoli", "彰化": "Changhua", "南投": "Nantou", "雲林": "Yunlin",
+            "嘉義": "Chiayi", "嘉義市": "Chiayi", "屏東": "Pingtung", "宜蘭": "Yilan",
+            "花蓮": "Hualien", "台東": "Taitung", "澎湖": "Penghu", "金門": "Kinmen",
             "連江": "Lienchiang"
         };
 
         let city = cityMap[cityInput] || cityInput;
-        // 原始的 OpenWeatherMap API Key
         const apiKey = "83b7835fd502cff5c1fe69ce70a7fe7e"; 
 
         if (!city) {
@@ -591,7 +599,6 @@
         
         resultElement.innerHTML = `<i class="fa fa-spinner fa-spin"></i> 查詢中...`;
 
-        // 構建 API URL
         const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric&lang=zh_tw`;
 
         try {
@@ -603,7 +610,6 @@
                 return;
             }
             
-            // 渲染結果
             resultElement.innerHTML = `
                 <p><strong><i class="bi bi-geo-alt-fill"></i> 城市：</strong> ${data.name} (${data.sys.country})</p>
                 <p><strong><i class="bi bi-cloud-sun-fill"></i> 天氣：</strong> ${data.weather[0].description}</p>
@@ -614,7 +620,66 @@
             resultElement.innerHTML = "查詢失敗，請稍後再試";
         }
     }
+
+    // ------------------------------------------------------------------
+    // 2. GitHub API 專案顯示功能 
+    // ------------------------------------------------------------------
+    async function getLatestGitHubRepo() {
+        // *** 已將此處替換為您的 GitHub 用戶名稱 ***
+        const username = "JoieLiu"; 
+        // **********************************************
+
+        const url = `https://api.github.com/users/${username}/repos?sort=updated&per_page=1`;
+        const displayElement = document.getElementById('github-repo-display');
+
+        // 檢查用戶名稱是否為預設值，這裡已經是 JoieLiu，所以不需要那個警告
+        
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (response.status !== 200 || data.length === 0) {
+                displayElement.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fa fa-times-circle me-2"></i><strong>錯誤：</strong> 無法載入或找不到用戶 **${username}** 的公開專案。
+                    </div>
+                `;
+                return;
+            }
+
+            const repo = data[0]; // 取得最新的專案
+
+            // 格式化更新時間
+            const updatedDate = new Date(repo.updated_at).toLocaleDateString('zh-TW', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+
+            displayElement.innerHTML = `
+                <div class="github-repo-item">
+                    <h4><a href="${repo.html_url}" target="_blank" class="text-primary">${repo.name} <i class="fa fa-external-link-alt ms-1"></i></a></h4>
+                    <p class="mb-1">${repo.description || "（無專案描述）"}</p>
+                    <p class="mb-0"><i class="fa fa-star me-1 text-warning"></i> Stars: ${repo.stargazers_count} | <i class="fa fa-code-branch me-1 text-info"></i> Forks: ${repo.forks_count}</p>
+                    <p class="mb-0"><small class="text-muted">最後更新於：${updatedDate}</small></p>
+                </div>
+            `;
+
+        } catch (error) {
+            console.error("GitHub API 錯誤:", error);
+            displayElement.innerHTML = `
+                <div class="alert alert-danger">
+                    載入專案時發生錯誤。請檢查您的網路連線。
+                </div>
+            `;
+        }
+    }
+
+    // 頁面載入時執行 GitHub API 呼叫
+    document.addEventListener('DOMContentLoaded', () => {
+        getLatestGitHubRepo();
+    });
     </script>
-    </body>
+</body>
 
 </html>
